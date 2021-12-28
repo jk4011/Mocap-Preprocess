@@ -1,8 +1,8 @@
-# csv를 합쳐주는 코드입니다.
+# 여러 csv 파일들을 합쳐주는 코드입니다.
 # 비어있는 부분을 채워주고 (description_map 참고)
 # style에 맞게 tag 를 채워주거나 description을 변경해 줍니다. (def add_tag, add_discription)
 
-# todo : tak 파일을 포고 csv 파일을 만드는 걸 다시 짜고, 이 코드 정리하기
+# todo : csv_creater.py 다시 짜고, 이 코드 정리하기
 import csv
 
 l = []

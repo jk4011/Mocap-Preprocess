@@ -3,12 +3,12 @@ import re, os, ntpath
 
 channelmap = {"Xrotation": "x", "Yrotation": "y", "Zrotation": "z"}
 
-class Anim(object):
+class VbhConverter(object):
     """
     A very basic animation object
     """
 
-    def __init__(self, rotation, pos, offsets, parents, bones, meta_data):
+    def __init__(self, filename, start=None, end=None, order=None):
         """
         :param rotation: local angular coordinate
         :param pos: local positions tensor
@@ -16,7 +16,10 @@ class Anim(object):
         :param parents: bone hierarchy
         :param bones: bone names
         """
-        self.rotation = rotation
+        self.filename = filename
+        rotations, pos, offsets, parents, bones, meta_data = self.__read_bvh(filename, start, end, order)
+
+        self.rotation = rotations
         self.pos = pos
         self.offsets = offsets
         self.parents = parents
@@ -86,11 +89,8 @@ class Anim(object):
 
         # 4. insert motion 
         self.rotation = np.insert(self.rotation, idx, [0.,0.,0.], axis=1)
-        print(1111, self.pos.shape)
         mid_value = (self.pos[:, idx-1] + self.pos[:, idx]) / 2
-        print(mid_value.shape)
         self.pos = np.insert(self.pos, idx, mid_value, axis=1)
-        print(2222, self.pos.shape)
         
         # update self.parents
         for i in range(len(self.parents)):
@@ -106,7 +106,7 @@ class Anim(object):
             self.indents[i] = self.indents[parent] + 1
         
 
-    def save(self):
+    def save(self, path=None):
         data = []
         prev_indent = 0
         for idx, bone in enumerate(self.bones):
@@ -163,145 +163,151 @@ class Anim(object):
             if data[i][-1] != "\n":
                 data[i] += "\n"
             
-        with open('test.bvh', 'w') as f:
+        if path == None:
+            try:
+                os.mkdir('converted')
+            except:
+                pass
+            path = "converted/" + self.filename
+        with open(path, 'w') as f:
             f.writelines(data)
 
 
-def read_bvh(filename, start=None, end=None, order=None):
-    """
-    Reads a BVH file and extracts animation information.
+    def __read_bvh(self, filename, start=None, end=None, order=None):
+        """
+        Reads a BVH file and extracts animation information.
 
-    :param filename: BVh filename
-    :param start: start frame
-    :param end: end frame
-    :param order: order of euler rotations
-    :return: A simple Anim object conatining the extracted information.
-    """
+        :param filename: BVh filename
+        :param start: start frame
+        :param end: end frame
+        :param order: order of euler rotations
+        :return: A simple Anim object conatining the extracted information.
+        """
 
-    f = open(filename, "r")
+        f = open(filename, "r")
 
-    i = 0
-    active = -1
-    end_site = False
+        i = 0
+        active = -1
+        end_site = False
 
-    names = []
-    orients = np.array([]).reshape((0, 4))
-    offsets = np.array([]).reshape((0, 3))
-    parents = np.array([], dtype=int)
-    meta_data = []
+        names = []
+        orients = np.array([]).reshape((0, 4))
+        offsets = np.array([]).reshape((0, 3))
+        parents = np.array([], dtype=int)
+        meta_data = []
 
-    # Parse the  file, line by line
-    for line in f:
+        # Parse the  file, line by line
+        for line in f:
 
-        if "HIERARCHY" in line:
-            continue
-        if "MOTION" in line:
-            continue
+            if "HIERARCHY" in line:
+                continue
+            if "MOTION" in line:
+                continue
 
-        rmatch = re.match(r"ROOT (\w+)", line)
-        if rmatch:
-            names.append(rmatch.group(1))
-            offsets = np.append(offsets, np.array([[0, 0, 0]]), axis=0)
-            orients = np.append(orients, np.array([[1, 0, 0, 0]]), axis=0)
-            parents = np.append(parents, active)
-            active = len(parents) - 1
-            continue
+            rmatch = re.match(r"ROOT (\w+)", line)
+            if rmatch:
+                names.append(rmatch.group(1))
+                offsets = np.append(offsets, np.array([[0, 0, 0]]), axis=0)
+                orients = np.append(orients, np.array([[1, 0, 0, 0]]), axis=0)
+                parents = np.append(parents, active)
+                active = len(parents) - 1
+                continue
 
-        if "{" in line:
-            continue
+            if "{" in line:
+                continue
 
-        if "}" in line:
-            if end_site:
-                end_site = False
-            else:
-                active = parents[active]
-            continue
+            if "}" in line:
+                if end_site:
+                    end_site = False
+                else:
+                    active = parents[active]
+                continue
 
-        offmatch = re.match(
-            r"\s*OFFSET\s+([\-\d\.e]+)\s+([\-\d\.e]+)\s+([\-\d\.e]+)", line
-        )
-        if offmatch:
-            if not end_site:
-                offsets[active] = np.array([list(map(float, offmatch.groups()))])
-            continue
+            offmatch = re.match(
+                r"\s*OFFSET\s+([\-\d\.e]+)\s+([\-\d\.e]+)\s+([\-\d\.e]+)", line
+            )
+            if offmatch:
+                if not end_site:
+                    offsets[active] = np.array([list(map(float, offmatch.groups()))])
+                continue
 
-        chanmatch = re.match(r"\s*CHANNELS\s+(\d+)", line)
-        if chanmatch:
-            channels = int(chanmatch.group(1))
-            if order is None:
-                channelis = 0 if channels == 3 else 3
-                channelie = 3 if channels == 3 else 6
-                parts = line.split()[2 + channelis : 2 + channelie]
-                if any([p not in channelmap for p in parts]):
-                    continue
-                order = "".join([channelmap[p] for p in parts])
-            continue
+            chanmatch = re.match(r"\s*CHANNELS\s+(\d+)", line)
+            if chanmatch:
+                channels = int(chanmatch.group(1))
+                if order is None:
+                    channelis = 0 if channels == 3 else 3
+                    channelie = 3 if channels == 3 else 6
+                    parts = line.split()[2 + channelis : 2 + channelie]
+                    if any([p not in channelmap for p in parts]):
+                        continue
+                    order = "".join([channelmap[p] for p in parts])
+                continue
 
-        jmatch = re.match("\s*JOINT\s+(\w+)", line)
-        if jmatch:
-            names.append(jmatch.group(1))
-            offsets = np.append(offsets, np.array([[0, 0, 0]]), axis=0)
-            orients = np.append(orients, np.array([[1, 0, 0, 0]]), axis=0)
-            parents = np.append(parents, active)
-            active = len(parents) - 1
-            continue
+            jmatch = re.match("\s*JOINT\s+(\w+)", line)
+            if jmatch:
+                names.append(jmatch.group(1))
+                offsets = np.append(offsets, np.array([[0, 0, 0]]), axis=0)
+                orients = np.append(orients, np.array([[1, 0, 0, 0]]), axis=0)
+                parents = np.append(parents, active)
+                active = len(parents) - 1
+                continue
 
-        if "End Site" in line:
-            end_site = True
-            continue
+            if "End Site" in line:
+                end_site = True
+                continue
 
-        fmatch = re.match("\s*Frames:\s+(\d+)", line)
-        if fmatch:
-            meta_data += [line]
-            if start and end:
-                fnum = (end - start) - 1
-            else:
-                fnum = int(fmatch.group(1))
-            positions = offsets[np.newaxis].repeat(fnum, axis=0)
-            rotations = np.zeros((fnum, len(orients), 3))
-            continue
+            fmatch = re.match("\s*Frames:\s+(\d+)", line)
+            if fmatch:
+                meta_data += [line]
+                if start and end:
+                    fnum = (end - start) - 1
+                else:
+                    fnum = int(fmatch.group(1))
+                positions = offsets[np.newaxis].repeat(fnum, axis=0)
+                rotations = np.zeros((fnum, len(orients), 3))
+                continue
 
-        fmatch = re.match("\s*Frame Time:\s+([\d\.]+)", line)
-        if fmatch:
-            meta_data += [line]
-            frametime = float(fmatch.group(1))
-            continue
+            fmatch = re.match("\s*Frame Time:\s+([\d\.]+)", line)
+            if fmatch:
+                meta_data += [line]
+                frametime = float(fmatch.group(1))
+                continue
 
-        if (start and end) and (i < start or i >= end - 1):
-            i += 1
-            continue
+            if (start and end) and (i < start or i >= end - 1):
+                i += 1
+                continue
 
-        for j in range(8,0,-1):
-            if re.search(j * " ", line):
-                break
-        dmatch = line.strip().split(j * " ")
+            for j in range(8,0,-1):
+                if re.search(j * " ", line):
+                    break
+            dmatch = line.strip().split(j * " ")
 
-        if dmatch:
-            data_block = np.array(list(map(float, dmatch)))
-            N = len(parents)
-            fi = i - start if start else i
-            if channels == 3:
-                positions[fi, 0:1] = data_block[0:3]
-                rotations[fi, :] = data_block[3:].reshape(N, 3)
-            elif channels == 6:
-                data_block = data_block.reshape(N, 6)
-                positions[fi, :] = data_block[:, 0:3]
-                rotations[fi, :] = data_block[:, 3:6]
-            elif channels == 9:
-                positions[fi, 0] = data_block[0:3]
-                data_block = data_block[3:].reshape(N - 1, 9)
-                rotations[fi, 1:] = data_block[:, 3:6]
-                positions[fi, 1:] += data_block[:, 0:3] * data_block[:, 6:9]
-            else:
-                raise Exception("Too many channels! %i" % channels)
+            if dmatch:
+                data_block = np.array(list(map(float, dmatch)))
+                N = len(parents)
+                fi = i - start if start else i
+                if channels == 3:
+                    positions[fi, 0:1] = data_block[0:3]
+                    rotations[fi, :] = data_block[3:].reshape(N, 3)
+                elif channels == 6:
+                    data_block = data_block.reshape(N, 6)
+                    positions[fi, :] = data_block[:, 0:3]
+                    rotations[fi, :] = data_block[:, 3:6]
+                elif channels == 9:
+                    positions[fi, 0] = data_block[0:3]
+                    data_block = data_block[3:].reshape(N - 1, 9)
+                    rotations[fi, 1:] = data_block[:, 3:6]
+                    positions[fi, 1:] += data_block[:, 0:3] * data_block[:, 6:9]
+                else:
+                    raise Exception("Too many channels! %i" % channels)
 
-            i += 1
+                i += 1
 
-    f.close()
+        f.close()
 
-    return Anim(rotations, positions, offsets, parents, names, meta_data)
+        return rotations, positions, offsets, parents, names, meta_data
 
-data = read_bvh("jump_n.bvh")
+data = VbhConverter("jump_n.bvh")
 data.insert_joint("LeftLeg", "AAA")
 data.save()
 

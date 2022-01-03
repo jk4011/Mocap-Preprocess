@@ -104,10 +104,10 @@ def insert_spine(data):
 
     # spine1 의 y 값을 절반으로 바꾸어 줍니다.
     float_expr = "[-]?[0-9]+[\.][0-9]+"
-    half_y = float(re.findall(float_expr, data[55])[1]) / 2
+    half_y = float(re.findall(float_expr, data[58])[1]) / 2
     target = "{float_expr} {float_expr} {float_expr}".format(float_expr=float_expr)
     content = "-0.000000 %f 0.000000" % half_y
-    data[55] = re.sub(target, content, data[55])
+    data[58] = re.sub(target, content, data[58])
 
     # spine2 를 추가합니다.
     data.insert(61, "            JOINT Spine2\n")

@@ -68,7 +68,7 @@ tmp = (np.array([3, 8, 13, 16, 23, 24, 25, 30, 31, 32]) - 1) * 3
 delete_joint_list = np.append(tmp, np.append(tmp + 1, tmp + 2)).tolist()
 
 
-def delete_joint(data, joint_idx_list):
+def delete_joint_motion(data, joint_idx_list):
     """coodinate를 뒤에 넘긴 후, 
     MOTION 부분의 불필요한 joint를 삭제"""
     
@@ -155,7 +155,7 @@ for filename in os.listdir():
     # 함수 순서 바꾸면 안 됩니다.
     data = pass_coord(data, pass_coord_list)
     data = delete_joint_hierachy(data, delete_line_list)
-    data = delete_joint(data, delete_joint_list)
+    data = delete_joint_motion(data, delete_joint_list)
     data = insert_spine(data)
     data = change_joint_name(data, ["Neck1"], ["Neck"])
 

@@ -23,12 +23,52 @@ class Anim(object):
         self.bones = bones
         self.meta_data = meta_data
 
-    def save(self):
-        indents = {-1: -1}
+        self.indents = {-1: -1}
         for i, parent in enumerate(self.parents):
-            indents[i] = indents[parent] + 1
+            self.indents[i] = self.indents[parent] + 1
+
+    def delete_joints(self, joints):
+        for joint in joints:
+            self.delete_joint(joint)
+
+    def delete_joint(self, joint):
+        # 1. find idx of joint
+        idx = self.bones.index(joint)
+        # 2. delete joint in hierachy
+        self.bones.pop(idx)
+        # 3. pass coordinates 
+        if self.indents[idx] < self.indents[idx+1]:
+            self.rotation[:, idx+1] += self.rotation[:, idx]
+        # 4. delete joint in motion
+        mask = np.ones(self.rotation.shape[1], dtype=bool)
+        mask[idx] = False
+        self.rotation = self.rotation[:, mask]
+
+        # update self.parents
+        for i in range(len(self.parents)):
+            if self.parents[i] == idx:
+                self.parents[i] = self.parents[idx]
+            elif self.parents[i] > idx:
+                self.parents[i] -= 1
+        mask = np.ones(self.parents.shape[0], dtype=bool)
+        mask[idx] = False
+        self.parents = self.parents[mask]
+
+        # update self.indents
+        self.indents = {-1: -1}
+        for i, parent in enumerate(self.parents):
+            self.indents[i] = self.indents[parent] + 1
+
+        # update self.offset:
+        mask = np.ones(self.offsets.shape[0], dtype=bool)
+        mask[idx] = False
+        self.offsets = self.offsets[mask]
+
         
         
+        
+
+    def save(self):
         data = []
         prev_indent = 0
         for idx, bone in enumerate(self.bones):
@@ -41,7 +81,7 @@ class Anim(object):
                     "    CHANNELS 6 Xposition Yposition Zposition Zrotation Yrotation Xrotation"
                 ]
             else:
-                indent = indents[idx]
+                indent = self.indents[idx]
                 if prev_indent > indent:
                     data += [
 						(prev_indent+1) * "    " + "End Site",
@@ -87,8 +127,6 @@ class Anim(object):
             
         with open('test.bvh', 'w') as f:
             f.writelines(data)
-                    
-    def 
 
 
 def read_bvh(filename, start=None, end=None, order=None):
@@ -228,8 +266,8 @@ def read_bvh(filename, start=None, end=None, order=None):
 
     return Anim(rotations, positions, offsets, parents, names, meta_data)
 
-data = read_bvh("jump_n_parsed.bvh")
-
+data = read_bvh("jump_n.bvh")
+data.delete_joint("LHipJoint")
 data.save()
 
 

@@ -3,7 +3,9 @@ from scipy.spatial.transform import Rotation as R
 import re
 import numpy as np
 
-# HIERACHY
+####################################################################################################
+############################################# HIERACHY #############################################
+####################################################################################################
 
 delete_line_list = [6, 7, 8, 9, 34,             # LHipJoint
                     35, 36, 37, 38, 63,         # RHipJoint
@@ -26,7 +28,12 @@ def delete_joint_hierachy(data, line_list):
 
     return data
 
-# MOTION
+
+
+####################################################################################################
+############################################## MOTION ##############################################
+####################################################################################################
+
 
 tmp = (np.array([3, 8, 13, 16]) - 1) * 3
 pass_coord_list = np.append(tmp, np.append(tmp + 1, tmp + 2)).tolist()
@@ -117,6 +124,20 @@ def insert_spine(data):
     return data
 
 
+def change_joint_name(data, before_list, after_list):
+    assert(len(before_list) == len(after_list), "length of two lists must be same")
+
+    for i in range(len(before_list)):
+        before = before_list[i]
+        after = after_list[i]
+
+        for j in range(data.index("MOTION\n")):
+            data[j] = data[j].replace(before, after)
+
+    return data
+
+    
+
 try:
     os.mkdir('parsed')
 except:
@@ -136,6 +157,7 @@ for filename in os.listdir():
     data = pass_coord(data, pass_coord_list)
     data = delete_joint(data, delete_joint_list)
     data = insert_spine(data)
+    data = change_joint_name(data, ["Neck1"], ["Neck"])
 
 
     # 지정된 경로(default: /parsed)에 변환된 파일 저장

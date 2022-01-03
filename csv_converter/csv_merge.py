@@ -12,11 +12,9 @@ styles = ['H', "EH", "N", "S", "ES"]
 def add_discription(st, actor):
   if actor == "1":
     st = st.replace("He", "A man")
-    # if st = 
 
   elif actor == "2":
     st = st.replace("He", "A woman")
-    # st = st.replace("he", "A woman")
     st = st.replace("his", "her")
     st = st.replace("himself", "herself")
 

@@ -10,16 +10,18 @@ class VbhConverter(object):
 
     def __init__(self, filename, start=None, end=None, order=None):
         """
-        :param rotation: local angular coordinate
-        :param pos: local positions tensor
-        :param offsets: local joint offsets
-        :param parents: bone hierarchy
-        :param bones: bone names
+        :rotation: local angular coordinate
+        :pos: local positions tensor
+        :offsets: local joint offsets
+        :parents: bone hierarchy
+        :meta_data: data about frame length and time
+        :bones: bone(joint) names
+        :indents: size of indent per joint
         """
         self.filename = filename
-        rotations, pos, offsets, parents, bones, meta_data = self.__read_bvh(filename, start, end, order)
+        rotation, pos, offsets, parents, bones, meta_data = self.__read_bvh(filename, start, end, order)
 
-        self.rotation = rotations
+        self.rotation = rotation
         self.pos = pos
         self.offsets = offsets
         self.parents = parents
@@ -104,6 +106,13 @@ class VbhConverter(object):
         self.indents = {-1: -1}
         for i, parent in enumerate(self.parents):
             self.indents[i] = self.indents[parent] + 1
+
+            
+    def change_joint_name(self, name_map):
+        for before, after in name_map.items():
+            idx = self.bones.index(before)
+            self.bones[idx] = after
+            
         
 
     def save(self, path=None):

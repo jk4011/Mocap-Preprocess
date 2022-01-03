@@ -37,17 +37,18 @@ class VbhConverter(object):
             self.delete_joint(joint)
 
     def delete_joint(self, joint):
-        # 1. find idx of joint
+        # find idx of joint
         idx = self.bones.index(joint)
 
-        # 2. delete joint in hierachy
+        # delete joint in hierachy
         self.bones.pop(idx)
 
-        # 3. pass coordinates 
-        if self.indents[idx] < self.indents[idx+1]:
-            self.rotation[:, idx+1] += self.rotation[:, idx]
+        # pass coordinates 
+        for child, parent in enumerate(self.parents):
+            if parent == idx:
+                self.rotation[:, child] += self.rotation[:, idx]
 
-        # 4. delete joint in motion
+        # delete joint in motion
         mask = np.ones(self.rotation.shape[1], dtype=bool)
         mask[idx] = False
         self.rotation = self.rotation[:, mask]
@@ -72,21 +73,53 @@ class VbhConverter(object):
         mask[idx] = False
         self.offsets = self.offsets[mask]
 
-        
-    def insert_joint(self, target, joint, type="middle"):
-        """todo : leaf로 insert하는 것도 구현하기."""
+    def insert_child_joint(self, parent, joint, loc="middle"):
+        """tree에서 leaf를 insert할 때 사용합니다."""
+        # find where to insert
+        idx = self.bones.index(parent) + 1
 
-        # 1. find idx of target
-        idx = self.bones.index(target)
+        # insert joint
+        self.bones.insert(idx, joint)
+
+        # update target joint
+        self.offsets = np.insert(self.offsets, idx, [0.,0.,0.], axis=0)
+
+        # insert motion 
+        self.rotation = np.insert(self.rotation, idx, [0.,0.,0.], axis=1)
+        if loc == "middle":
+            mid_value = (self.pos[:, idx-1] + self.pos[:, idx]) / 2
+            self.pos = np.insert(self.pos, idx, mid_value, axis=1)
+        elif loc == "same":
+            self.pos = np.insert(self.pos, idx, self.pos[idx], axis=1)
+        
+        # update self.parents
+        for i in range(len(self.parents)):
+            if self.parents[i] >= idx:
+                self.parents[i] += 1
+        
+        self.parents = np.insert(self.parents, idx, self.parents[idx])
+        self.parents[idx+1] = idx
+
+        # update self.indents
+        self.indents = {-1: -1}
+        for i, parent in enumerate(self.parents):
+            self.indents[i] = self.indents[parent] + 1
+        
+        
+    def insert_parent_joint(self, child, joint, loc="middle"):
+        """tree에서 node를 insert할 때 사용합니다."""
+
+        # 1. find where to insert
+        idx = self.bones.index(child)
 
         # 2. insert joint
-        self.bones = np.insert(self.bones, idx, joint)
+        self.bones.insert(idx, joint)
 
         # 3. update target joint
-        if type == "middle":
+        if loc == "middle":
             self.offsets[idx] = self.offsets[idx] / 2
             self.offsets = np.insert(self.offsets, idx, self.offsets[idx].copy(), axis=0)
-        if type == "zero":
+        if loc == "same":
             self.offsets = np.insert(self.offsets, idx, [0., 0., 0.], axis=0)
 
         # 4. insert motion 
@@ -108,7 +141,7 @@ class VbhConverter(object):
             self.indents[i] = self.indents[parent] + 1
 
             
-    def change_joint_name(self, name_map):
+    def rename_joint(self, name_map):
         for before, after in name_map.items():
             idx = self.bones.index(before)
             self.bones[idx] = after
@@ -316,8 +349,23 @@ class VbhConverter(object):
 
         return rotations, positions, offsets, parents, names, meta_data
 
-data = VbhConverter("jump_n.bvh")
-data.insert_joint("LeftLeg", "AAA")
-data.save()
+data = VbhConverter("parsed/jump_n_parsed.bvh")
+
+data.delete_joint("Spine2")
+data.rename_joint({"Neck": "Neck1"})
+
+data.insert_parent_joint("LeftUpLeg", "LHipJoint", loc="same")
+data.insert_parent_joint("RightUpLeg", "RHipJoint", loc="same")
+data.insert_parent_joint("Spine", "LowerBack", loc="same")
+data.insert_parent_joint("Neck1", "Neck", loc="same")
+
+# data.insert_child_joint("LeftHand", "LeftFingerBase", loc="same")
+# data.insert_child_joint("LeftFingerBase", "LeftHandIndex1", loc="same")
+# data.insert_child_joint("LeftHandIndex1", "LThumb", loc="same")
+# data.insert_child_joint("RightHand", "RightFingerBase", loc="same")
+# data.insert_child_joint("RightFingerBase", "RightHandIndex1", loc="same")
+# data.insert_child_joint("RightHandIndex1", "RThumb", loc="same")
+
+data.save("test.bvh")
 
 

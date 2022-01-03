@@ -1,2 +1,5 @@
 test.py
 parsed
+converted
+__pycache__
+*.pyc

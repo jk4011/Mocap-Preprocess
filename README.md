@@ -6,10 +6,10 @@
 * bvh는 자유분방한 파일형식입니다. bvh 형식이 같아야 model을 학습시킬 수 있어, 이를 통일 시주는 코드들입니다.
 * ex) `lafan2dme.py` : lafan 형식에서 dme 로 변환하는 파이썬 코드입니다.
 
-* **파일 형식**
-  ours : LIMLAB motive의 bvh형식입니다.
-  [lafan](https://github.com/ubisoft/ubisoft-laforge-animation-dataset) 
-  [dme](https://github.com/DeepMotionEditing/deep-motion-editing)
+* **파일 형식**  
+  ours : LIMLAB motive의 bvh형식입니다.  
+  [lafan](https://github.com/ubisoft/ubisoft-laforge-animation-dataset)  
+  [dme](https://github.com/DeepMotionEditing/deep-motion-editing)  
 
 ## csv converter
 

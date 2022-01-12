@@ -8,9 +8,9 @@
 * ex) `lafan2dme.py` : lafan 형식에서 dme 로 변환하는 파이썬 코드입니다.
 
 * **파일 형식**  
-  motive : LIMLAB의 모션캡쳐장비 sofware인 Motive의 bvh형식입니다.
-  [lafan](https://github.com/ubisoft/ubisoft-laforge-animation-dataset) : link 확인
-  [dme](https://github.com/DeepMotionEditing/deep-motion-editing) : link 확인
+  motive : LIMLAB의 모션캡쳐장비 sofware인 Motive의 bvh형식입니다.  
+  [lafan](https://github.com/ubisoft/ubisoft-laforge-animation-dataset) : link 확인  
+  [dme](https://github.com/DeepMotionEditing/deep-motion-editing) : link 확인  
 
 ## csv converter
 

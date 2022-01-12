@@ -1,4 +1,4 @@
-자세한 내용은 [notion link](https://jh11.notion.site/Mocap-48f9578a29de49b793e22bbc2c40e02d) 을 참고해 주세요.
+자세한 내용은 [notion](https://jh11.notion.site/Mocap-48f9578a29de49b793e22bbc2c40e02d) 을 참고해 주세요.
 # Mocap-Preprocess
 * 모션캡쳐 전처리 코드를 모아둔 repository입니다.
 

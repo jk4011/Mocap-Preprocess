@@ -4,7 +4,7 @@
 * 자세한 내용은 [notion](https://jh11.notion.site/Mocap-48f9578a29de49b793e22bbc2c40e02d) 을 참고해 주세요.
 
 ## bvh converter
-* bvh는 자유분방한 파일형식입니다. bvh 형식이 같아야 model을 학습시킬 수 있어, 이를 통일 시주는 코드들입니다.
+* bvh는 rigid body를 표현하는 파일형식입니다. bvh를 data로 nn을 학습실킬 때 bvh의 내부 형식이 같야 하기 때문에, 전처리 코드가 필요합니다.
 * ex) `lafan2dme.py` : lafan 형식에서 dme 로 변환하는 파이썬 코드입니다.
 
 * **파일 형식**  
